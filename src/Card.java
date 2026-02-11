@@ -2,10 +2,10 @@ import processing.core.PImage;
 import processing.core.PApplet;
 
 public class Card extends ClickableRectangle {
-    public String value;
-    public String suit;
-    public PImage img;
-    public boolean turned = false;
+    String value;
+    String suit;
+    PImage img;
+    boolean turned = false;
     private int clickableWidth = 30; // Width of the left sliver that is clickable
     private boolean selected = false;
     private int baseY;
@@ -71,14 +71,27 @@ public class Card extends ClickableRectangle {
         this.height = height;
     }
 
+    @Override
     public void draw(PApplet sketch) {
+        if (turned) {
+            sketch.fill(150);
+            sketch.rect(x, y, width, height);
+            return;
+        }
+        if (isSelected()) {
+            sketch.stroke(0);
+            sketch.strokeWeight(4);
+        } else {
+            sketch.stroke(0);
+        }
         if (img != null) {
             sketch.image(img, x, y, width, height);
         } else {
             sketch.fill(255);
             sketch.rect(x, y, width, height);
             sketch.fill(0);
-            sketch.text(value + " of " + suit, x + 10, y + 10);
+            sketch.text(value, x + 10, y + 10);
         }
+        sketch.strokeWeight(1);
     }
 }

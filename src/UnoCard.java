@@ -7,19 +7,7 @@ public class UnoCard extends Card {
 
     @Override
     public void draw(PApplet sketch) {
-        if (turned) {
-            sketch.fill(150);
-            sketch.rect(x, y, width, height);
-            return;
-        }
-        sketch.push();
-        if (isSelected()) {
-            sketch.stroke(0);
-            sketch.strokeWeight(4);
-        } else {
-            sketch.stroke(0);
-        }
-
+        super.draw(sketch);
         // set card color based on suit
         switch (suit) {
             case "Red":
@@ -39,7 +27,6 @@ public class UnoCard extends Card {
                 break;
         }
         sketch.rect(x, y, width, height);
-        sketch.pop();
 
         // text 
         if (suit == "Blue") {
