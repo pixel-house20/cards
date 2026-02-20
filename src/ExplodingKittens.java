@@ -41,7 +41,7 @@ super.initializeGame();
 
 dealCards(7);
 
-//create smth for when gavin decides 4 of players 
+//create smth for 4 of players 
 //3 diffuses and 3 exploding kittens 
 //total 56 cards 
 
