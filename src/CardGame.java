@@ -8,6 +8,8 @@ public class CardGame {
     ArrayList<Card> deck = new ArrayList<>();
     Hand playerOneHand;
     Hand playerTwoHand;
+    Hand playerThreeHand;
+    Hand PlayerFourHand;
     ArrayList<Card> discardPile = new ArrayList<>();
     Card selectedCard;
     int selectedCardRaiseAmount = 15;
