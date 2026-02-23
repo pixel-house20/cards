@@ -4,6 +4,10 @@ import java.util.ArrayList;
 
 public class ExplodingKittens extends CardGame {
 // stuff dealing with player # and other things will be done later  
+boolean actionPending = false;
+Card pendingActionCard = null;
+int extraTurns = 0;
+ArrayList<Card> futurePreview = new ArrayList<>();
 
 public ExplodingKittens(){
     super();
@@ -20,16 +24,18 @@ public void createDeck(){
         deck.add(new Card("Skip", "Action"));
         deck.add(new Card("Shuffle", "Action"));
         deck.add(new Card("SeeFuture", "Action"));
-        deck.add(new Card("Attack", "Action"));
+        //deck.add(new Card("Attack", "Action"));
         deck.add(new Card("Nope", "Action"));
         deck.add(new Card("Stop", "Action"));
         deck.add(new Card("Favor", "Action"));
         deck.add(new Card("Attack", "Action"));
+        // attack, skip, defuse logic done 
+        //to do = nope stop see future 
 
     }
-    String[] catTypes = {"Tacocat", "HairyPotato", "Cattermelon", "BeardCat"};
+    String[] catTypes = {"Tacocat", "HairyPotato", "Cattermelon", "BeardCat", "RainbowCat"};
     for(String cat : catTypes){
-        for( int i = 0; i < 4; i++){
+        for( int i = 0; i < 5; i++){
             deck.add(new Card(cat, "Cat"));
 
         }
@@ -58,7 +64,6 @@ playerThreeHand.addCard(defuseCards.remove(0));
 PlayerFourHand.addCard(defuseCards.remove(0));
 
 deck.addAll(explodingCards);
-//create smth for when gavin decides 4 of players 
 //3 diffuses and 3 exploding kittens 
 //total 56 cards 
 }
@@ -94,5 +99,80 @@ public void drawCard(Hand hand){
     }
 
 
+}
+@Override
+public boolean playCard(Card card, Hand hand){
+
+    if(!isValidPlay(card)) return false;
+    
+    hand.removeCard(card);
+    discardPile.add(card);
+
+    if(card.value.equals("Skip)")){
+        System.out.println("Turn Skipped");
+        switchTurns();
+        return true;
+    }
+//    if(card.value.equals("Attack")){
+//     System.out.println("Attack Played");
+//      switchTurns();
+//    return true;
+//    }
+  
+   if(card.value.equals("Nope")){
+    if(actionPending){
+    System.out.println("Nope, action was cancelled");
+    actionPending = false;
+     pendingActionCard = null;
+ 
+    }
+    switchTurns();
+    return true;
+}
+
+    if (card.value.equals("Shuffle")){
+        System.out.println("Deck Shuffled!");
+        java.util.Collections.shuffle(deck);
+        switchTurns();
+        return true;
+        
+    }
+        
+    
+if(actionPending){
+    executePendingAction();
+}
+actionPending = true;
+pendingActionCard = card;
+switchTurns();
+return true;
+}
+
+public void executePendingAction(){
+  
+    if(pendingActionCard==null) return;
+
+    if(value.equals("SeeFuture")){
+        futurePreview.clear();
+        for(int i = 0;  i < deck.size(); i++){
+            futurePreview.add(deck.get(i));
+            System.out.println("Top 3 cards are");
+            for(Card c : futurePreview){
+                System.out.println(c.value);
+
+            }
+
+        }
+}
+if(value.equals("Attack")){
+    extraTurns = 2;
+    System.out.println("Attack, next player must take 2 turns");
+}
+if (value.equals("Stop")){
+    if(extraTurns > 0){
+        extraTurns = 0;
+        System.out.println("Attack stopped");
+    }
+}
 }
 }

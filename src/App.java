@@ -2,74 +2,74 @@ import processing.core.PApplet;
 
 public class App extends PApplet {
 
-    CardGame cardGame = new Uno();
-    private int timer;
+    ExplodingKittens game;
 
     public static void main(String[] args) {
         PApplet.main("App");
     }
+
     @Override
     public void settings() {
-        size(600, 600);   
+        size(1000, 800);   
+    }
+
+    @Override
+    public void setup() {
+        game = new ExplodingKittens();
+        game.initializeGame();
     }
 
     @Override
     public void draw() {
-        background(255);
-        // Draw player hands
-        for (int i = 0; i < cardGame.playerOneHand.getSize(); i++) {
-            Card card = cardGame.playerOneHand.getCard(i);
-            if (card != null) {
-                card.draw(this);
-            }
-        }
-        // Draw computer hand
-        for (int i = 0; i < cardGame.playerTwoHand.getSize(); i++) {
-            Card card = cardGame.playerTwoHand.getCard(i);
-            if (card != null) {
-                card.draw(this);
-            }
-        }
-        
-        // Draw draw button
-        fill(200);
-        cardGame.drawButton.draw(this);
-        fill(0);
-        textAlign(CENTER, CENTER);
-        text("Draw", cardGame.drawButton.x + cardGame.drawButton.width / 2, cardGame.drawButton.y + cardGame.drawButton.height / 2);
+        background(40,45,50);
 
-        // Display current player
-        fill(0);
-        textSize(16);
-        text("Current Player: " + cardGame.getCurrentPlayer(), width / 2, 20);
+        displayGameInfo();
+        // Draw UI elements and game state here
 
-        // Display deck size
-        text("Deck Size: " + cardGame.getDeckSize(), width / 2,
-                height - 20);
-        // Display last played card
-        if (cardGame.getLastPlayedCard() != null) {
-            cardGame.getLastPlayedCard().setPosition(width / 2 - 40, height / 2 - 60, 80, 120);
-            cardGame.getLastPlayedCard().draw(this);
-        }
-        if (cardGame.getCurrentPlayer() == "Player Two") {
-            fill(0);
-            textSize(16);
-            text("Computer is thinking...", width / 2, height / 2 + 80);
-            timer++;
-            if (timer == 100) {
-                cardGame.handleComputerTurn();
-                timer = 0;
-            }
-        }
+        drawHand(game.playerOneHand, height - 150, "Player One");
+        drawHand(game.playerTwoHand, 50, "Player Two");
+        // make this changable based on the current player
 
-        cardGame.drawChoices(this);
+        if (!game.futurePreview.isEmpty()) {
+            drawFuturePreview();
+        }   
+
     }
 
-    
     @Override
     public void mousePressed() {
-        cardGame.handleDrawButtonClick(mouseX, mouseY);
-        cardGame.handleCardClick(mouseX, mouseY);
+        if (!game.futurePreview.isEmpty()) {
+            game.futurePreview.clear();
+            return;
+        }   
     }
+}
+
+
+public void drawFuturePreview(){
+
+    fill (0, 200);
+    rect(0, 0, width, height);
+
+    fill(255);
+    textSize(24);
+    textAlighn(CENTER, CENTER);
+    text("Future Preview", width / 2, height / 2 - 100);
+
+    // see 3 cards
+    for (int i = 0; i < game.futurePreview.size(); i++){
+        Card c = game.futurePreview.get(i);
+
+        float x = (width/2 - 150) * (i *110);
+        c.setPosition(x, height / 2, 100, 150);
+        c.display(this);
+
+    }
+
+    text("Click anywhere to close", width / 2, height / 2 + 100);
+
+
+
+
 
 }
