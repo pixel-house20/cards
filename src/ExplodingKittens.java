@@ -214,20 +214,9 @@ public boolean playCard(Card card, List<Card> hand){
             return true;
 
         case "Attack":
-            // The current player's turns are over
-            turnsRemaining = 0; 
-    
-            // The NEXT player gets 2 turns 
-            int attackPenalty = 2; 
-
-             // Move to next player 
-            currentPlayer++;
-                if (currentPlayer > 4) currentPlayer = 1;
-    
-    
-            turnsRemaining = attackPenalty; 
-    
-    
+           turnsRemaining = 0; 
+            actionPending = true; 
+            pendingActionCard = card; 
             return true;
     }
 
@@ -275,21 +264,30 @@ private void printHand(String playerName, List<Card> hand){
 }
 
 public void nextTurn() {
-    turnsRemaining--;
+    if (turnsRemaining > 0) {
+        turnsRemaining--;
+    }
 
     if (turnsRemaining <= 0) {
-        
-        int steps = 1 + skipCount;
-        skipCount = 0; 
+        currentPlayer++;
+        if (currentPlayer > 4) currentPlayer = 1;
 
-        for(int i = 0; i < steps; i++){
-            currentPlayer++;
-            if(currentPlayer > 4) currentPlayer = 1;
+        // CHECK: Was this move triggered by an Attack
+        if (pendingActionCard != null && pendingActionCard.value.equals("Attack")) {
+            turnsRemaining = 2; // Next player gets 2 turns
+            pendingActionCard = null; // Clear the flag
+        } else {
+            turnsRemaining = 1; // Standard reset
         }
-        turnsRemaining = 1; 
+
+        // Handle skip
+        if (skipCount > 0) {
+            currentPlayer++;
+            if (currentPlayer > 4) currentPlayer = 1;
+            skipCount = 0; 
+        }
     }
-    
-    System.out.println("Current Player: " + currentPlayer + " | Turns left: " + turnsRemaining);
+    System.out.println("Switching. Current Player: " + currentPlayer + " | Turns: " + turnsRemaining);
 }
 
 

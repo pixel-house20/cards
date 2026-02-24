@@ -80,8 +80,14 @@ public class App extends PApplet {
             aiWaiting = true;
             aiStartTime = millis();
 
+
+            int time = 6000;
+            // 20000 for time
+
+
             // Random delay between 5 and 20 seconds
-            aiDelay = (int) random(5000, 20001);
+            aiDelay = (int) random(5000, time);
+
         }
 
         if(aiWaiting && millis() - aiStartTime >= aiDelay){
@@ -162,11 +168,16 @@ public void mousePressed() {
 
             boolean played = game.playCard(c, game.playerOneHand);
 
-            if(played){
+            if (played) {
                 System.out.println("Player 1 performed one action");
                 hoveredCatCard = null;
-                game.nextTurn();
-            }
+
+            
+                if (!c.value.equals("Attack") && !c.value.equals("Skip")) {
+                    game.nextTurn();
+                }
+                return; 
+}
 
             return; // prevents multiple actions
         }
