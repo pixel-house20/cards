@@ -27,8 +27,8 @@ public class CardGame {
     int drawButtonHeight = 35;
 
     public CardGame() {
-        initializeGame();
-        dealCards(6);
+        // initializeGame();
+        // dealCards(6);
     }
 
     protected void initializeGame() {

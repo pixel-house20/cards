@@ -62,12 +62,12 @@ public class Card extends ClickableRectangle {
         this.height = height;
     }
 
-    public void setPosition(int x, int y, int width, int height) {
-        this.x = x;
-        this.y = y;
-        this.width = width;
-        this.height = height;
-    }
+    public void setPosition(float x, float y, float width, float height) {
+    this.x = (int)x;
+    this.y = (int)y;
+    this.width = (int)width;
+    this.height = (int)height;
+}
 
     @Override
     public void draw(PApplet sketch) {
