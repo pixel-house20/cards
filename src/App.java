@@ -1,5 +1,7 @@
 import processing.core.PApplet;
 import java.util.HashMap;
+import java.util.List;
+
 import processing.core.PImage;
 
 // import java.util.List;
@@ -12,6 +14,10 @@ public class App extends PApplet {
     PImage stackImage;
     boolean futurePrinted = false;
     Card hoveredCatCard = null;
+
+    boolean aiWaiting = false;
+    int aiStartTime = 0;
+    int aiDelay = 0; 
 
 
     public static void main(String[] args) {
@@ -48,7 +54,7 @@ public class App extends PApplet {
     game = new ExplodingKittens(cardImages); 
     game.initializeGame();
 
-    // TEMP: populate futurePreview for debugging CHANGE THIS LATER*****
+    // TEMP:  futurePreview for debugging CHANGE THIS LATER*****
     for (int i = 0; i < Math.min(3, game.deck.size()); i++) {
         game.futurePreview.add(game.deck.get(i));
     }
@@ -68,16 +74,25 @@ public class App extends PApplet {
     drawPlayPile();
 
    
-    if (!game.futurePreview.isEmpty()) {
-        drawFuturePreview();
-    }   
-
     if(game.currentPlayer != 1){
-    takeAITurn(game.currentPlayer);
-    game.nextTurn();
+
+        if(!aiWaiting){
+            aiWaiting = true;
+            aiStartTime = millis();
+
+            // Random delay between 5 and 20 seconds
+            aiDelay = (int) random(5000, 20001);
+        }
+
+        if(aiWaiting && millis() - aiStartTime >= aiDelay){
+
+            takeAITurn(game.currentPlayer);
+            aiWaiting = false;
+        }
+    }
 }
 
-}
+
 
     public void drawStacks() {
     int stackOffset = 3;
@@ -102,7 +117,6 @@ public class App extends PApplet {
             float yi = y + i * stackOffset;
             image(stackImage, xi, yi, cardW, cardH);
 
-            // Draw thick black border
             stroke(0);
             strokeWeight(2);
             noFill();
@@ -118,43 +132,43 @@ public class App extends PApplet {
     strokeWeight(1);
 }
     @Override
-   public void mousePressed() {
+public void mousePressed() {
 
     if(game.currentPlayer != 1) return;
 
     if (!game.futurePreview.isEmpty()) {
         game.futurePreview.clear();
         return;
-    }   
+    }
 
-   for (Card c : game.playerOneHand) {
+    // ===== Check Deck Click First (Draw = one action) =====
+    float cardW = 100;
+    float cardH = 150;
+    float deckX = width / 2f - cardW - 20;
+    float deckY = height / 2f - cardH / 2f;
+
+    if (mouseX >= deckX && mouseX <= deckX + cardW &&
+        mouseY >= deckY && mouseY <= deckY + cardH) {
+
+        System.out.println("Player draws a card");
+        game.drawCard(game.playerOneHand);
+        game.nextTurn();
+        return;
+    }
+
+    // ===== Check Hand =====
+    for (Card c : game.playerOneHand) {
         if (c.isMouseOver(mouseX, mouseY)) {
 
-            // Cat card logic
-            if (c.type.equals("Cat")) {
-                if (hoveredCatCard == null) {
-                    hoveredCatCard = c;
-                    c.setSelected(true, 20);
-                } else if (hoveredCatCard.value.equals(c.value) && hoveredCatCard != c) {
-                    // Matched cats, play both
-                    game.playCard(hoveredCatCard, game.playerOneHand);
-                    game.playCard(c, game.playerOneHand);
-                    hoveredCatCard.setSelected(false, 20);
-                    hoveredCatCard = null;
-                    game.switchTurns(); 
-                } else {
-                    hoveredCatCard.setSelected(false, 20);
-                    hoveredCatCard = c;
-                    c.setSelected(true, 20);
-                }
-                break;
+            boolean played = game.playCard(c, game.playerOneHand);
+
+            if(played){
+                System.out.println("Player 1 performed one action");
+                hoveredCatCard = null;
+                game.nextTurn();
             }
 
-            // Action or other playable cards
-            System.out.println("Player 1 played: " + c.value);
-            game.playCard(c, game.playerOneHand);
-            game.switchTurns(); 
-            break; // Only allow one card per click
+            return; // prevents multiple actions
         }
     }
 }
@@ -170,7 +184,7 @@ public class App extends PApplet {
 
     // Print the future cards once for debugging
    if (!futurePrinted) {
-    System.out.println("=== Future Preview Cards ===");
+    System.out.println(" Future Preview Cards");
     for (int i = 0; i < game.futurePreview.size(); i++) {
         Card c = game.futurePreview.get(i);
         System.out.println("Card " + i + ": " + c.value);
@@ -286,27 +300,50 @@ public void drawPlayPile() {
 
 public void takeAITurn(int player){
 
-    // Khairi and I will update and make this more complex later, but for now it just looks for the first action card and plays it, otherwise draws a card
-    java.util.List<Card> hand = null;
+    List<Card> hand = null;
+
     switch(player){
         case 2: hand = game.playerTwoHand; break;
         case 3: hand = game.playerThreeHand; break;
         case 4: hand = game.playerFourHand; break;
     }
 
-    if(hand == null) return;
+    if(hand == null || hand.isEmpty()) return;
+
+    Card bestCard = null;
+    int highestScore = -999;
 
     for(Card c : hand){
-        if(c.type.equals("Action")){
-            System.out.println("AI Player " + player + " played: " + c.value);
-            game.playCard(c, hand);
-            return;
+
+        if(c.type.equals("Action") || c.type.equals("Cat")){
+
+            int score = c.getStrategicValue();
+
+            if(c.type.equals("Cat")){
+                int count = 0;
+                for(Card other : hand){
+                    if(other.value.equals(c.value)) count++;
+                }
+                if(count < 2) continue;
+            }
+
+            if(score > highestScore){
+                highestScore = score;
+                bestCard = c;
+            }
         }
     }
 
-    // If no action cards, just draw
-    System.out.println("AI Player " + player + " draws a card");
-    game.drawCard(hand);
+    if(bestCard != null){
+        System.out.println("AI Player " + player + " plays: " + bestCard.value);
+        game.playCard(bestCard, hand);
+    } else {
+        System.out.println("AI Player " + player + " draws");
+        game.drawCard(hand);
+    }
+
+    // EXACTLY ONE ACTION COMPLETE
+    game.nextTurn();
 }
 
 }

@@ -13,7 +13,10 @@ public class ExplodingKittens extends CardGame {
 // stuff dealing with player # and other things will be done later  
 boolean actionPending = false;
 Card pendingActionCard = null;
+
 int extraTurns = 0;
+int skipCount = 0;
+
 ArrayList<Card> futurePreview = new ArrayList<>();
 HashMap<String, PImage> images;
 
@@ -88,6 +91,7 @@ public void initializeGame(){
     }
 
     Collections.shuffle(deck);
+    printFullDeck(); // Debugging: print the full deck after creation and shuffling
 
     // Deal 7 cards to each player
     for (int i = 0; i < 7; i++) {
@@ -145,70 +149,74 @@ private void removeDefuse(List<Card> hand){
         hand.add(drawn);
     }
 }
-   public boolean playCard(Card card, List<Card> hand){
-    // Step 1: Only allow Action cards for now
+public boolean playCard(Card card, List<Card> hand){
+
+    // CAT PAIR LOGIC 
+    if(card.type.equals("Cat")){
+        int count = 0;
+        for(Card c : hand){
+            if(c.type.equals("Cat") && c.value.equals(card.value)){
+                count++;
+            }
+        }
+
+        if(count >= 2){
+            // Remove two matching cats
+            int removed = 0;
+            for(int i = hand.size() - 1; i >= 0 && removed < 2; i--){
+                Card c = hand.get(i);
+                if(c.type.equals("Cat") && c.value.equals(card.value)){
+                    playPile.add(hand.remove(i));
+                    removed++;
+                }
+            }
+
+            System.out.println("Played two " + card.value + " cards!");
+
+            switchTurns();
+            return true;
+        } else {
+            System.out.println("Need two matching Cat cards.");
+            return false;
+        }
+    }
+
+    // ACTION CARDS 
     if(!card.type.equals("Action")){
-        System.out.println("You can only play Action cards for now.");
+        System.out.println("Invalid card type.");
         return false;
     }
 
-   
     hand.remove(card);
-
     playPile.add(card);
 
     System.out.println(card.value + " played!");
 
-    // Handle immediate effects
     switch(card.value){
         case "Skip":
-            System.out.println("Turn Skipped");
-            switchTurns();
+            System.out.println("Next player's turn will be skipped");
+            skipCount = 1;
             return true;
 
         case "Shuffle":
-            System.out.println("Deck Shuffled!");
             Collections.shuffle(deck);
             switchTurns();
             return true;
 
-        case "Nope":
-            if(actionPending){
-                System.out.println("Nope! Previous action cancelled.");
-                actionPending = false;
-                pendingActionCard = null;
-            }
-            switchTurns();
-            return true;
-
         case "SeeFuture":
-            System.out.println("See the next 3 cards!");
             futurePreview.clear();
             for(int i = 0; i < Math.min(3, deck.size()); i++){
                 futurePreview.add(deck.get(i));
             }
-            break; // Keep the turn for AI or additional logic if needed
-
-        case "Favor":
-            System.out.println("Favor card played! Pick a card from another player (to implement).");
-            break;
+            switchTurns();
+            return true;
 
         case "Attack":
             extraTurns = 2;
-            System.out.println("Attack played! Next player must take 2 turns.");
-            break;
+            switchTurns();
+            return true;
     }
 
-    // If there is an action pending (combo logic), execute it
-    if(actionPending){
-        executePendingAction();
-    }
-
-    // Mark this card as the pending action
-    actionPending = true;
-    pendingActionCard = card;
-
-    // End Player 1 turn
     switchTurns();
     return true;
 }
@@ -245,9 +253,25 @@ private void printHand(String playerName, List<Card> hand){
 }
 
 public void nextTurn() {
-    currentPlayer++;
-    if(currentPlayer > 4) currentPlayer = 1;
+
+    int steps = 1 + skipCount;
+    skipCount = 0;
+
+    for(int i = 0; i < steps; i++){
+        currentPlayer++;
+        if(currentPlayer > 4) currentPlayer = 1;
+    }
+
     System.out.println("Player " + currentPlayer + "'s turn");
 }
 
+
+public void printFullDeck() {
+    System.out.println("ALL CARDS (DEBUGGING) (" + deck.size() + " cards)");
+    for (int i = 0; i < deck.size(); i++) {
+        Card c = deck.get(i);
+        System.out.println(i + ": " + c.value + " [" + c.type + "]");
+    }
+    System.out.println("-------------------------------");
+}
 }

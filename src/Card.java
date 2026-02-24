@@ -68,4 +68,31 @@ public class Card extends ClickableRectangle {
     this.width = (int) width;
     this.height = (int) height;
 }
+
+public int getStrategicValue() {
+
+    switch(this.type) {
+
+        case "Exploding":
+            return -100;   // never playable
+
+        case "Defuse":
+            return 5;      // keep, rarely play
+
+        case "Cat":
+            return 1;      // weak unless paired
+
+        case "Action":
+            switch(this.value) {
+                case "Attack": return 6;
+                case "Skip": return 5;
+                case "Shuffle": return 3;
+                case "SeeFuture": return 4;
+                case "Favor": return 4;
+                case "Nope": return 5;
+            }
+    }
+
+    return 0;
+}
 }
