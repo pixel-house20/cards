@@ -207,7 +207,22 @@ public void mousePressed() {
     // textSize(20);
     // textAlign(LEFT, TOP);
     // text("Player One Cards: " + game.playerOneHand.size(), 20, 20);
-    // text("Player Two Cards: " + game.playerTwoHand.size(), 20, 50);
+    // text("Player Two Cards: " + game.playerTwoHand.size(), 20, 50);'
+    // 
+    fill(255);
+    textSize(22);
+    textAlign(LEFT, TOP);
+    
+    String turnText = (game.currentPlayer == 1) ? "YOUR TURN" : "AI Player " + game.currentPlayer + " Turn";
+    text(turnText, 20, 20);
+
+    if (game.turnsRemaining > 1) {
+        fill(255, 0, 0);
+        text("FORCED TURNS: " + game.turnsRemaining, 20, 50);
+    } else {
+        fill(200);
+        text("Turns: 1", 20, 50);
+    }
     }   
 
   public void drawHand(java.util.List<Card> hand, float y, String playerName) {

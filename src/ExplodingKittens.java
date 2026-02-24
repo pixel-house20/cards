@@ -28,6 +28,8 @@ public List<Card> playerFourHand = new ArrayList<>();
 public ArrayList<Card> playPile = new ArrayList<>();
 
 public int currentPlayer = 1; // 1 = human, 2-4 = AI
+public int turnsRemaining = 1;
+
 
 
 public ExplodingKittens(){
@@ -212,13 +214,33 @@ public boolean playCard(Card card, List<Card> hand){
             return true;
 
         case "Attack":
-            extraTurns = 2;
-            switchTurns();
+            // The current player's turns are over
+            turnsRemaining = 0; 
+    
+            // The NEXT player gets 2 turns 
+            int attackPenalty = 2; 
+
+             // Move to next player 
+            currentPlayer++;
+                if (currentPlayer > 4) currentPlayer = 1;
+    
+    
+            turnsRemaining = attackPenalty; 
+    
+    
             return true;
     }
 
+    System.out.println("---- Player Hands ----");
+    printHand("Player One", playerOneHand);
+    printHand("Player Two", playerTwoHand);
+    printHand("Player Three", playerThreeHand);
+    printHand("Player Four", playerFourHand);
+
     switchTurns();
     return true;
+
+    
 }
 
 public void executePendingAction(){
@@ -253,16 +275,21 @@ private void printHand(String playerName, List<Card> hand){
 }
 
 public void nextTurn() {
+    turnsRemaining--;
 
-    int steps = 1 + skipCount;
-    skipCount = 0;
+    if (turnsRemaining <= 0) {
+        
+        int steps = 1 + skipCount;
+        skipCount = 0; 
 
-    for(int i = 0; i < steps; i++){
-        currentPlayer++;
-        if(currentPlayer > 4) currentPlayer = 1;
+        for(int i = 0; i < steps; i++){
+            currentPlayer++;
+            if(currentPlayer > 4) currentPlayer = 1;
+        }
+        turnsRemaining = 1; 
     }
-
-    System.out.println("Player " + currentPlayer + "'s turn");
+    
+    System.out.println("Current Player: " + currentPlayer + " | Turns left: " + turnsRemaining);
 }
 
 
@@ -272,6 +299,6 @@ public void printFullDeck() {
         Card c = deck.get(i);
         System.out.println(i + ": " + c.value + " [" + c.type + "]");
     }
-    System.out.println("-------------------------------");
+    
 }
 }
