@@ -10,6 +10,7 @@ public class App extends PApplet {
 
     HashMap<String, PImage> cardImages = new HashMap<>();
     PImage stackImage;
+    boolean futurePrinted = false;
 
 
     public static void main(String[] args) {
@@ -45,6 +46,11 @@ public class App extends PApplet {
     // Now create the game with fully populated images map
     game = new ExplodingKittens(cardImages); 
     game.initializeGame();
+
+    // TEMP: populate futurePreview for debugging CHANGE THIS LATER*****
+    for (int i = 0; i < Math.min(3, game.deck.size()); i++) {
+        game.futurePreview.add(game.deck.get(i));
+    }
     
 }
 
@@ -58,6 +64,7 @@ public class App extends PApplet {
     drawHand(game.playerOneHand, height - 340, "Your Hand", false);
     drawStacks();
     drawCenterDecks();
+    drawPlayPile();
 
    
     if (!game.futurePreview.isEmpty()) {
@@ -109,9 +116,23 @@ public class App extends PApplet {
             game.futurePreview.clear();
             return;
         }   
+
+        // Loop through Player 1's hand
+    for (Card c : game.playerOneHand) {
+        if (c.isMouseOver(mouseX, mouseY)) {
+            // Only allow Action cards for now
+            if (c.type.equals("Action")) {
+                System.out.println("Player 1 played: " + c.value);
+                game.playCard(c, game.playerOneHand); // removes and executes
+            } else {
+                System.out.println("You can only play Action cards for now.");
+            }
+            break; // only allow clicking one card at a time
+        }
+    }
     }
 
-    public void drawFuturePreview(){
+   public void drawFuturePreview() {
     fill(0, 200);
     rect(0, 0, width, height);
 
@@ -120,11 +141,21 @@ public class App extends PApplet {
     textAlign(CENTER, CENTER);
     text("Future Preview", width / 2, height / 2 - 100);
 
+    // Print the future cards once for debugging
+   if (!futurePrinted) {
+    System.out.println("=== Future Preview Cards ===");
     for (int i = 0; i < game.futurePreview.size(); i++) {
         Card c = game.futurePreview.get(i);
-        float x = width/2 - 150 + i * 110;
-        c.setPosition(x, height/2, 100, 150);
-        c.draw(this);  // draws image
+        System.out.println("Card " + i + ": " + c.value);
+    }
+    futurePrinted = true;
+}
+
+    for (int i = 0; i < game.futurePreview.size(); i++) {
+        Card c = game.futurePreview.get(i);
+        float x = width / 2 - 150 + i * 110;
+        c.setPosition(x, height / 2, 100, 150);
+        c.draw(this);
     }
 
     text("Click anywhere to close", width / 2, height / 2 + 100);
@@ -199,31 +230,30 @@ public void drawCenterDecks() {
     rect(deckX, deckY, cardW, cardH); 
 
     stroke(0);
-    strokeWeight(3); // thick black border
+    strokeWeight(3); 
     noFill();
     rect(deckX, deckY, cardW, cardH);
 
-    fill(255);
+    image(stackImage, deckX, deckY, cardW, cardH);
     textAlign(CENTER, BOTTOM);
     text("Deck", deckX + cardW / 2f, deckY - 10);
 
-    // Play pile – right
-    float pileX = centerX + 20;
-    float pileY = centerY - cardH / 2f;
-
-    fill(204, 204, 183); 
-    rect(pileX, pileY, cardW, cardH);
-
-    stroke(0);
-    strokeWeight(3);
-    noFill();
-    rect(pileX, pileY, cardW, cardH);
-
-    fill(255);
-    textAlign(CENTER, BOTTOM);
-    text("Play Pile", pileX + cardW / 2f, pileY - 10);
-
-    // Reset stroke weight
-    strokeWeight(1);
+  
 }
+
+public void drawPlayPile() {
+    float cardW = 100;
+    float cardH = 150;
+    float pileX = width / 2f + 20;  // Adjust with your layout
+    float pileY = height / 2f - cardH / 2f;
+
+    for (int i = 0; i < game.playPile.size(); i++) {
+        Card c = game.playPile.get(i);
+        // Slight offset so cards appear stacked
+        float offset = i * 3;
+        c.setPosition(pileX + offset, pileY + offset, cardW, cardH);
+        c.draw(this);
+    }
+}
+
 }

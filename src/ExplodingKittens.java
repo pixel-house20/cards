@@ -22,6 +22,8 @@ public List<Card> playerTwoHand = new ArrayList<>();
 public List<Card> playerThreeHand = new ArrayList<>();
 public List<Card> playerFourHand = new ArrayList<>();
 
+public ArrayList<Card> playPile = new ArrayList<>();
+
 public ExplodingKittens(){
     super();
 }
@@ -140,49 +142,72 @@ private void removeDefuse(List<Card> hand){
         hand.add(drawn);
     }
 }
-    public boolean playCard(Card card, List<Card> hand){
-    if(!isValidPlay(card)) return false;
-    hand.remove(card);
-    discardPile.add(card);
+   public boolean playCard(Card card, List<Card> hand){
+    // Step 1: Only allow Action cards for now
+    if(!card.type.equals("Action")){
+        System.out.println("You can only play Action cards for now.");
+        return false;
+    }
 
-            if(card.value.equals("Skip")){
+   
+    hand.remove(card);
+
+    playPile.add(card);
+
+    System.out.println(card.value + " played!");
+
+    // Handle immediate effects
+    switch(card.value){
+        case "Skip":
             System.out.println("Turn Skipped");
-        switchTurns();
-        return true;
+            switchTurns();
+            return true;
+
+        case "Shuffle":
+            System.out.println("Deck Shuffled!");
+            Collections.shuffle(deck);
+            switchTurns();
+            return true;
+
+        case "Nope":
+            if(actionPending){
+                System.out.println("Nope! Previous action cancelled.");
+                actionPending = false;
+                pendingActionCard = null;
+            }
+            switchTurns();
+            return true;
+
+        case "SeeFuture":
+            System.out.println("See the next 3 cards!");
+            futurePreview.clear();
+            for(int i = 0; i < Math.min(3, deck.size()); i++){
+                futurePreview.add(deck.get(i));
+            }
+            break; // Keep the turn for AI or additional logic if needed
+
+        case "Favor":
+            System.out.println("Favor card played! Pick a card from another player (to implement).");
+            break;
+
+        case "Attack":
+            extraTurns = 2;
+            System.out.println("Attack played! Next player must take 2 turns.");
+            break;
     }
-//    if(card.value.equals("Attack")){
-//     System.out.println("Attack Played");
-//      switchTurns();
-//    return true;
-//    }
-  
-   if(card.value.equals("Nope")){
+
+    // If there is an action pending (combo logic), execute it
     if(actionPending){
-    System.out.println("Nope, action was cancelled");
-    actionPending = false;
-     pendingActionCard = null;
- 
+        executePendingAction();
     }
+
+    // Mark this card as the pending action
+    actionPending = true;
+    pendingActionCard = card;
+
+    // End Player 1 turn
     switchTurns();
     return true;
-}
-
-    if (card.value.equals("Shuffle")){
-        System.out.println("Deck Shuffled!");
-        java.util.Collections.shuffle(deck);
-        switchTurns();
-        return true;
-        
-    }
-        
-    
-if(actionPending){
-    executePendingAction();
-}
-actionPending = true;
-pendingActionCard = card;
-switchTurns();
-return true;
 }
 
 public void executePendingAction(){
@@ -215,4 +240,6 @@ private void printHand(String playerName, List<Card> hand){
     }
     System.out.println();
 }
+
+
 }
