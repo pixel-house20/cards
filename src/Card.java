@@ -6,6 +6,8 @@ public class Card extends ClickableRectangle {
     String suit;
     PImage img;
     boolean turned = false;
+    public boolean hovered = false;
+
     private int clickableWidth = 30; // Width of the left sliver that is clickable
     private boolean selected = false;
     private int baseY;
@@ -71,25 +73,31 @@ public class Card extends ClickableRectangle {
 
     @Override
     public void draw(PApplet sketch) {
-        if (turned) {
-            sketch.fill(150);
-            sketch.rect(x, y, width, height);
-            return;
-        }
-        if (isSelected()) {
-            sketch.stroke(0);
-            sketch.strokeWeight(4);
-        } else {
-            sketch.stroke(0);
-        }
-        if (img != null) {
-            sketch.image(img, x, y, width, height);
-        } else {
-            sketch.fill(255);
-            sketch.rect(x, y, width, height);
-            sketch.fill(0);
-            sketch.text(value, x + 10, y + 10);
-        }
-        sketch.strokeWeight(1);
+    float drawX = x;
+    float drawY = y;
+    float drawWidth = width;
+    float drawHeight = height;
+
+    if (hovered) {
+        drawWidth *= 1.4;
+        drawHeight *= 1.4;
+        drawX -= (drawWidth - width) / 2;
+        drawY -= (drawHeight - height) / 2;
     }
+
+    sketch.stroke(0);
+    if (img != null) {
+        sketch.image(img, drawX, drawY, drawWidth, drawHeight);
+    } else {
+        sketch.fill(255, 100, 100);
+        sketch.rect(drawX, drawY, drawWidth, drawHeight);
+        sketch.fill(0);
+        sketch.text(value, drawX + 10, drawY + 20);
+    }
+    }
+
+    public boolean isMouseOver(float mx, float my) {
+    return mx >= x && mx <= x + width &&
+           my >= y && my <= y + height;
+}
 }
