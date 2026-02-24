@@ -11,6 +11,7 @@ public class App extends PApplet {
     HashMap<String, PImage> cardImages = new HashMap<>();
     PImage stackImage;
     boolean futurePrinted = false;
+    Card hoveredCatCard = null;
 
 
     public static void main(String[] args) {
@@ -70,6 +71,12 @@ public class App extends PApplet {
     if (!game.futurePreview.isEmpty()) {
         drawFuturePreview();
     }   
+
+    if(game.currentPlayer != 1){
+    takeAITurn(game.currentPlayer);
+    game.nextTurn();
+}
+
 }
 
     public void drawStacks() {
@@ -111,26 +118,46 @@ public class App extends PApplet {
     strokeWeight(1);
 }
     @Override
-    public void mousePressed() {
-        if (!game.futurePreview.isEmpty()) {
-            game.futurePreview.clear();
-            return;
-        }   
+   public void mousePressed() {
 
-        // Loop through Player 1's hand
-    for (Card c : game.playerOneHand) {
+    if(game.currentPlayer != 1) return;
+
+    if (!game.futurePreview.isEmpty()) {
+        game.futurePreview.clear();
+        return;
+    }   
+
+   for (Card c : game.playerOneHand) {
         if (c.isMouseOver(mouseX, mouseY)) {
-            // Only allow Action cards for now
-            if (c.type.equals("Action")) {
-                System.out.println("Player 1 played: " + c.value);
-                game.playCard(c, game.playerOneHand); // removes and executes
-            } else {
-                System.out.println("You can only play Action cards for now.");
+
+            // Cat card logic
+            if (c.type.equals("Cat")) {
+                if (hoveredCatCard == null) {
+                    hoveredCatCard = c;
+                    c.setSelected(true, 20);
+                } else if (hoveredCatCard.value.equals(c.value) && hoveredCatCard != c) {
+                    // Matched cats, play both
+                    game.playCard(hoveredCatCard, game.playerOneHand);
+                    game.playCard(c, game.playerOneHand);
+                    hoveredCatCard.setSelected(false, 20);
+                    hoveredCatCard = null;
+                    game.switchTurns(); 
+                } else {
+                    hoveredCatCard.setSelected(false, 20);
+                    hoveredCatCard = c;
+                    c.setSelected(true, 20);
+                }
+                break;
             }
-            break; // only allow clicking one card at a time
+
+            // Action or other playable cards
+            System.out.println("Player 1 played: " + c.value);
+            game.playCard(c, game.playerOneHand);
+            game.switchTurns(); 
+            break; // Only allow one card per click
         }
     }
-    }
+}
 
    public void drawFuturePreview() {
     fill(0, 200);
@@ -254,6 +281,32 @@ public void drawPlayPile() {
         c.setPosition(pileX + offset, pileY + offset, cardW, cardH);
         c.draw(this);
     }
+}
+
+
+public void takeAITurn(int player){
+
+    // Khairi and I will update and make this more complex later, but for now it just looks for the first action card and plays it, otherwise draws a card
+    java.util.List<Card> hand = null;
+    switch(player){
+        case 2: hand = game.playerTwoHand; break;
+        case 3: hand = game.playerThreeHand; break;
+        case 4: hand = game.playerFourHand; break;
+    }
+
+    if(hand == null) return;
+
+    for(Card c : hand){
+        if(c.type.equals("Action")){
+            System.out.println("AI Player " + player + " played: " + c.value);
+            game.playCard(c, hand);
+            return;
+        }
+    }
+
+    // If no action cards, just draw
+    System.out.println("AI Player " + player + " draws a card");
+    game.drawCard(hand);
 }
 
 }

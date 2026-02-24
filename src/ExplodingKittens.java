@@ -24,6 +24,9 @@ public List<Card> playerFourHand = new ArrayList<>();
 
 public ArrayList<Card> playPile = new ArrayList<>();
 
+public int currentPlayer = 1; // 1 = human, 2-4 = AI
+
+
 public ExplodingKittens(){
     super();
 }
@@ -241,5 +244,10 @@ private void printHand(String playerName, List<Card> hand){
     System.out.println();
 }
 
+public void nextTurn() {
+    currentPlayer++;
+    if(currentPlayer > 4) currentPlayer = 1;
+    System.out.println("Player " + currentPlayer + "'s turn");
+}
 
 }
