@@ -107,9 +107,9 @@ public class App extends PApplet {
 
     // Player info is {label, x, y, textAlign}
     Object[][] players = {
-        {"Jerry", width / 2f - cardW / 2f, 50f, CENTER},
-        {"Arnold", 50f, height / 2f - cardH / 2f, LEFT},
-        {"Matilda", width - 150f, height / 2f - cardH / 2f, RIGHT}
+        {"Player 2", width / 2f - cardW / 2f, 50f, CENTER},
+        {"Player 3", 50f, height / 2f - cardH / 2f, LEFT},
+        {"Player 4", width - 150f, height / 2f - cardH / 2f, RIGHT}
     };
 
     for (Object[] player : players) {
@@ -178,7 +178,6 @@ public void mousePressed() {
                 }
                 return; 
 }
-
             return; // prevents multiple actions
         }
     }
@@ -230,7 +229,8 @@ public void mousePressed() {
     if (game.turnsRemaining > 1) {
         fill(255, 0, 0);
         text("FORCED TURNS: " + game.turnsRemaining, 20, 50);
-    } else {
+    } 
+    else {
         fill(200);
         text("Turns: 1", 20, 50);
     }

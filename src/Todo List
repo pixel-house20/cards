@@ -1,0 +1,22 @@
+
+
+stuff to do still:
+
+
+1. Start working on specific cards
+ - attack (done, but debug still needed: when you play the attack, it gives you two turns as well as the next person)
+ - Nope (needa figure out how to make someone be able to play a nope card at any time)
+ - Favor (NEEDS TOTAL COMPLETION - 1. figure out how to choose who you want the card from 2. how to make it so that the player can pick a card 3. using the value system, make the computer figure out how to pick a card)
+ - Finish see the future (needs to implement, the code is already in App.java)
+ - shuffle (do shuffle so that the decks array is rearranged)
+
+ 2. Fix deck and end graphics
+ - when the deck runs out of cards, you can still draw just nothing happens
+ - make a animation for the death scene if you dont have a defuse
+ - perhaps include more exploding kittens because they are kinda rare
+ - code end scene so that something happens
+ - what if the computer explodes, how does the visual change
+
+ 3. include a instruction page...?
+
+ 4. Polish graphics cause they are kinda plain
