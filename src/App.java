@@ -50,7 +50,6 @@ public class App extends PApplet {
     cardImages.put("BeardCat", loadImage("BeardCat_.jpg"));
     cardImages.put("RainbowCat", loadImage("RainbowCat_.jpg"));
 
-    // Now create the game with fully populated images map
     game = new ExplodingKittens(cardImages); 
     game.initializeGame();
 
@@ -83,9 +82,6 @@ public class App extends PApplet {
 
             int time = 6000;
             // 20000 for time
-
-
-            // Random delay between 5 and 20 seconds
             aiDelay = (int) random(5000, time);
 
         }
@@ -147,7 +143,7 @@ public void mousePressed() {
         return;
     }
 
-    // ===== Check Deck Click First (Draw = one action) =====
+    // Check Deck Click First (Draw = one action)
     float cardW = 100;
     float cardH = 150;
     float deckX = width / 2f - cardW - 20;
@@ -162,7 +158,7 @@ public void mousePressed() {
         return;
     }
 
-    // ===== Check Hand =====
+    //  Check Hand 
     for (Card c : game.playerOneHand) {
         if (c.isMouseOver(mouseX, mouseY)) {
 
@@ -178,11 +174,11 @@ public void mousePressed() {
                 }
                 return; 
 }
-            return; // prevents multiple actions
+            return; 
         }
     }
 }
-
+// SEE THE FUTURE HERE
    public void drawFuturePreview() {
     fill(0, 200);
     rect(0, 0, width, height);
@@ -311,12 +307,12 @@ public void drawCenterDecks() {
 public void drawPlayPile() {
     float cardW = 100;
     float cardH = 150;
-    float pileX = width / 2f + 20;  // Adjust with your layout
+    float pileX = width / 2f + 20;  
     float pileY = height / 2f - cardH / 2f;
 
     for (int i = 0; i < game.playPile.size(); i++) {
         Card c = game.playPile.get(i);
-        // Slight offset so cards appear stacked
+
         float offset = i * 3;
         c.setPosition(pileX + offset, pileY + offset, cardW, cardH);
         c.draw(this);

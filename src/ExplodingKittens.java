@@ -76,6 +76,7 @@ public void createDeck() {
 public void initializeGame(){
     super.initializeGame();
     
+    // THIS DOES NOT WORK YET
     // Add extra defuse cards for 4 players
     for (int i = 0; i < 4; i++) {
         deck.add(new Card("Defuse", "Defuse", images.get("Defuse")));
