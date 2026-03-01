@@ -152,8 +152,86 @@ private void removeDefuse(List<Card> hand){
         hand.add(drawn);
     }
 }
-public boolean playCard(Card card, List<Card> hand){
 
+
+
+
+
+
+
+
+
+
+
+
+
+    public void resolvePendingAction(){
+    if(!actionPending || pendingActionCard == null) return;
+
+    nopeWindowOpen = false; 
+    if(actionCanceled){
+        System.out.println("Action was noped");
+
+    }else{
+         switch(pendingActionCard.value){
+
+            case "Skip":
+                skipCount = 1;
+                break;
+            case "Shuffle":
+                Collections.shuffle(deck);
+                break;
+            case "SeeFuture":
+                futurePreview.clear();
+                for(int i = 0; i < Math.min(3,deck.size()); i++){
+                    futurePreview.add(deck.get(i));
+                }
+                break;
+            case "Attack":
+                turnsRemaining = 0;
+                break;
+
+            case "Favor":
+                //lowkey gotta do this 
+                break;
+
+                
+             
+         }
+    }
+    actionPending = false;
+    pendingActionCard = null;
+    pendingPlayer = -1;
+    actionCanceled = false;
+
+}
+public boolean playCard(Card card, List<Card> hand){
+if(card.type.equals("Action")){
+        if(card.value.equals("Nope")){
+        if(nopeWindowOpen && pendingActionCard != null){
+            System.out.println("Nope played, ACtion has been canceled");
+            hand.remove(card);
+            playPile.add(card);
+            actionCanceled = !actionCanceled;
+            return true;
+        } else {
+            System.out.println("Nothing to Nope");
+            return false;
+        }
+     }
+        hand.remove(card);
+        playPile.add(card);
+        pendingActionCard = card;
+        pendingPlayer  = currentPlayer;
+        actionPending = true;
+        nopeWindowOpen = true;
+        actionCanceled = false;
+        System.out.println(card.value + "Played, Waiting for Nope");
+        return true;
+
+    }
+
+    
     // CAT PAIR LOGIC 
     if(card.type.equals("Cat")){
         int count = 0;
