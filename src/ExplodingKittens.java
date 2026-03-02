@@ -212,7 +212,7 @@ public boolean playCard(Card card, List<Card> hand){
 if(card.type.equals("Action")){
         if(card.value.equals("Nope")){
         if(nopeWindowOpen && pendingActionCard != null){
-            System.out.println("Nope played, ACtion has been canceled");
+            System.out.println("Nope played, Action has been canceled");
             hand.remove(card);
             playPile.add(card);
             actionCanceled = !actionCanceled;
