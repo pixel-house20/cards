@@ -13,6 +13,9 @@ public class ExplodingKittens extends CardGame {
 // stuff dealing with player # and other things will be done later  
 boolean actionPending = false;
 Card pendingActionCard = null;
+boolean nopeWindowOpen = false;
+boolean actionCanceled = false;
+int pendingPlayer = -1;
 
 int extraTurns = 0;
 int skipCount = 0;
