@@ -27,6 +27,8 @@ public class ExplodingKittens extends CardGame {
 
     public int currentPlayer = 1; 
     public int turnsRemaining = 1;
+    private boolean gameOver = false;
+    private int explodedPlayer = 0;
 
     public java.util.ArrayList<String> screenLog;
     public java.util.ArrayList<Integer> screenTimers;
@@ -69,6 +71,8 @@ public class ExplodingKittens extends CardGame {
     @Override
     public void initializeGame() {
         super.initializeGame();
+        gameOver = false;
+        explodedPlayer = 0;
 
         ArrayList<Card> explodingCards = new ArrayList<>();
         ArrayList<Card> defuseCards = new ArrayList<>();
@@ -101,6 +105,7 @@ public class ExplodingKittens extends CardGame {
     }
 
     public void drawCard(List<Card> hand) {
+        if (gameOver) return;
         if (deck.isEmpty()) return;
         Card drawn = deck.remove(0);
         String pName = "Player " + currentPlayer;
@@ -112,10 +117,20 @@ public class ExplodingKittens extends CardGame {
                 deck.add((int) (Math.random() * deck.size()), drawn);
             } else {
                 logEvent(pName + " EXPLODED!");
+                gameOver = true;
+                explodedPlayer = currentPlayer;
+                actionPending = false;
+                pendingActionCard = null;
+                nopeWindowOpen = false;
+                actionCanceled = false;
+                if (currentPlayer == 1) {
+                    logEvent("You lost");
+                }
+                hand.clear();
+                return;
             }
         } else {
             hand.add(drawn);
-            logEvent(pName + " drew a card.");
         }
     }
 
@@ -129,8 +144,9 @@ public void resolvePendingAction() {
     } else {
         switch (pendingActionCard.value) {
             case "Skip" -> {
-                skipCount = 1;
+                
                 logEvent("Player " + pendingPlayer + " used Skip.");
+                skipCount = 1;
                 nextTurn(); 
             }
             case "Attack" -> {
@@ -144,10 +160,14 @@ public void resolvePendingAction() {
          }
             case "SeeFuture" -> {
                 futurePreview.clear();
-                for (int i = 0; i < Math.min(3, deck.size()); i++) {
-                    futurePreview.add(deck.get(i));
+                if (pendingPlayer == 1) {
+                    for (int i = 0; i < Math.min(3, deck.size()); i++) {
+                        futurePreview.add(deck.get(i));
+                    }
+                    logEvent("Future revealed (ooohhh!).");
+                } else {
+                    logEvent("Player " + pendingPlayer + " looked at the future.");
                 }
-                logEvent("Future revealed (ooohhh!).");
                 nextTurn();
          }
             case "Favor" -> {
@@ -182,7 +202,6 @@ public void resolvePendingAction() {
         }
 
         if (card.type.equals("Cat")) {
-            // Pair logic here (simplified for space)
             hand.remove(card);
             playPile.add(card);
             return true;
@@ -198,45 +217,41 @@ public void resolvePendingAction() {
         return true;
     }
 
-   public void nextTurn() {
-    // 1. Capture the intent before clearing the card
+
+    public void nextTurn() {
     boolean isAttack = (pendingActionCard != null && pendingActionCard.value.equals("Attack"));
     boolean isSkip = (pendingActionCard != null && pendingActionCard.value.equals("Skip"));
-    boolean isEndingForcefully = isAttack || isSkip;
-
-    // 2. Clear the pending card immediately so it doesn't interfere with the next turn
+    
     pendingActionCard = null; 
 
-    // 3. Handle multiple turns (the 'remaining' logic)
-    if (turnsRemaining > 1 && !isEndingForcefully) {
+    if (turnsRemaining > 1 && !isAttack && !isSkip) {
         turnsRemaining--;
         logEvent("Player " + currentPlayer + " has " + turnsRemaining + " forced turns left.");
         printAllHands(); 
         return;
     }
 
-    // 4. Move to the next player
-    currentPlayer = (currentPlayer % 4) + 1;
+    
+    int nextPlayer = (currentPlayer % 4) + 1;
 
-    // 5. Apply the Attack/Skip logic to the NEW player
-    if (isAttack) {
-        // If attacked, the NEXT player gets 2 turns (or 2 + current)
+    if (isSkip || skipCount > 0) {
+        logEvent("Player " + nextPlayer + " was skipped!");
+        currentPlayer = (nextPlayer % 4) + 1; 
+        turnsRemaining = 1;
+        skipCount = 0; 
+    } else if (isAttack) {
+        currentPlayer = nextPlayer;
         turnsRemaining = 2; 
         logEvent("Player " + currentPlayer + " ATTACKED! Take 2 turns.");
     } else {
+        currentPlayer = nextPlayer;
         turnsRemaining = 1;
-    }
-
-    if (isSkip || skipCount > 0) {
-        logEvent("Player " + currentPlayer + " was skipped!");
-        currentPlayer = (currentPlayer % 4) + 1;
-        skipCount = 0;
-        turnsRemaining = 1; 
     }
 
     printAllHands();
     logEvent("Current Turn: Player " + currentPlayer);
 }
+
     private List<Card> getHand(int id) {
         return switch (id) {
             case 1 -> playerOneHand;
@@ -264,6 +279,14 @@ public void resolvePendingAction() {
         for (int i = 0; i < hand.size(); i++) {
             if (hand.get(i).value.equals("Defuse")) { hand.remove(i); return; }
         }
+    }
+
+    public boolean isGameOver() {
+        return gameOver;
+    }
+
+    public int getExplodedPlayer() {
+        return explodedPlayer;
     }
 
     public void printAllHands() {

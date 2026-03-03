@@ -18,6 +18,9 @@ public class App extends PApplet {
     boolean aiWaiting = false;
     int aiStartTime = 0;
     int aiDelay = 0; 
+    boolean restartQueued = false;
+    int restartStartTime = 0;
+    final int restartDelayMs = 2500;
 
     PImage startScreenImg;
     final int Startstate = 0;
@@ -70,11 +73,47 @@ public void setup() {
     game.futurePreview.clear();
 }
 
+private void restartGame() {
+    gameLog.clear();
+    logTimers.clear();
+    futurePrinted = false;
+    aiWaiting = false;
+    restartQueued = false;
+    restartStartTime = 0;
+    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);
+    game.initializeGame();
+    game.futurePreview.clear();
+    currentState = Gamestate;
+}
+
+private void handleGameOver() {
+    fill(0, 170);
+    rect(0, 0, width, height);
+    fill(255, 80, 80);
+    textAlign(CENTER, CENTER);
+    textSize(36);
+    String explodedText = game.getExplodedPlayer() == 1
+        ? "You Exploded!"
+        : "Player " + game.getExplodedPlayer() + " Exploded!";
+    text(explodedText, width / 2f, height / 2f - 25);
+    fill(255);
+    textSize(20);
+    text("Starting a new game...", width / 2f, height / 2f + 20);
+
+    if (!restartQueued) {
+        restartQueued = true;
+        restartStartTime = millis();
+    }
+
+    if (millis() - restartStartTime >= restartDelayMs) {
+        restartGame();
+    }
+}
+
 
 @Override
 public void draw() {
     background(40, 45, 50);
-
     if (currentState == Startstate) {
         if (startScreenImg != null) {
             image(startScreenImg, 0, 0, width, height);
@@ -84,9 +123,19 @@ public void draw() {
             text("Exploding Kittens\nClick to Start", width/2, height/2);
         }
     } else {
+        if (game.isGameOver()) {
+            handleGameOver();
+            drawGameLog();
+            return;
+        }
   
-        if (game.actionPending && frameCount % 120 == 0) {
+        if (game.actionPending && frameCount % 30 == 0) {
             game.resolvePendingAction();
+        }
+
+        // Safety valve: if the pending card was cleared unexpectedly, unblock turns.
+        if (game.actionPending && game.pendingActionCard == null) {
+            game.actionPending = false;
         }
 
         displayGameInfo();
@@ -97,15 +146,21 @@ public void draw() {
 
         if (!game.futurePreview.isEmpty()) {
             drawFuturePreview();
+
+            // AI "See Future" should not block the game waiting for a human click.
+            if (game.currentPlayer != 1) {
+                game.futurePreview.clear();
+                futurePrinted = false;
+            }
         }
 
-        if (game.currentPlayer != 1 && !game.actionPending && game.futurePreview.isEmpty()) {
+        if (game.currentPlayer != 1 && !game.actionPending) {
             if (!aiWaiting) {
                 aiWaiting = true;
                 aiStartTime = millis();
 
 
-                aiDelay = (int) random(1000, 2000); 
+                aiDelay = (int) random(800, 1500);
             }
 
             if (aiWaiting && millis() - aiStartTime >= aiDelay) {
@@ -163,6 +218,8 @@ public void mousePressed() {
         return; 
     }
 
+    if (game.isGameOver()) return;
+
     if (!game.futurePreview.isEmpty()) {
         game.futurePreview.clear();
         futurePrinted = false; 
@@ -190,10 +247,10 @@ public void mousePressed() {
             boolean played = game.playCard(c, game.playerOneHand);
 
             if (played) {
-                if (!c.value.equals("Attack") && !c.value.equals("Skip")) {
+                if (c.type.equals("Cat")) {
                     game.nextTurn();
                 }
-                return; 
+                return;
             }
         }
     }
@@ -229,12 +286,7 @@ public void mousePressed() {
 }
 
     public void displayGameInfo() {
-    // fill(255);
-    // textSize(20);
-    // textAlign(LEFT, TOP);
-    // text("Player One Cards: " + game.playerOneHand.size(), 20, 20);
-    // text("Player Two Cards: " + game.playerTwoHand.size(), 20, 50);'
-    // 
+ 
     fill(255);
     textSize(22);
     textAlign(LEFT, TOP);
@@ -348,7 +400,10 @@ public void takeAITurn(int player) {
         case 4: hand = game.playerFourHand; break;
     }
 
-    if (hand == null || hand.isEmpty()) return;
+    if (hand == null || hand.isEmpty()) {
+        game.nextTurn();
+        return;
+    }
 
     Card bestCard = null;
     int highestScore = -999;
@@ -374,12 +429,8 @@ public void takeAITurn(int player) {
     // AI DECISION LOGIC
     if (bestCard != null && highestScore > 2) {
         boolean played = game.playCard(bestCard, hand);
-        if (played) {
-            // FIX: If the card is NOT an Attack or Skip (which resolve themselves),
-            // we must end the AI's turn here.
-            if (!bestCard.value.equals("Attack") && !bestCard.value.equals("Skip")) {
-                game.nextTurn();
-            }
+        if (played && bestCard.type.equals("Cat")) {
+            game.nextTurn();
         }
     } else {
         // AI draws a card and ends turn
