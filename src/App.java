@@ -84,8 +84,7 @@ public void draw() {
         }
     } else {
         displayGameInfo();
-        drawHand(game.playerOneHand, height - 200, "Your Hand", false);
-        drawStacks();
+        drawHand(game.playerOneHand, height - 350, "Your Hand", false);        drawStacks();
         drawCenterDecks();
         drawPlayPile();
 
@@ -153,23 +152,21 @@ public void draw() {
 
     strokeWeight(1);
 }
-    @Override
-    public void mousePressed() {
-
+   @Override
+public void mousePressed() {
     if (currentState == Startstate) {
         currentState = Gamestate;
         return; 
     }
 
-    if(game.currentPlayer != 1) return;
-
-   if (!game.futurePreview.isEmpty()) {
+    if (!game.futurePreview.isEmpty()) {
         game.futurePreview.clear();
         futurePrinted = false; 
         return; 
     }
 
-    // Check Deck Click First (Draw = one action)
+    if(game.currentPlayer != 1 || game.actionPending) return;
+
     float cardW = 100;
     float cardH = 150;
     float deckX = width / 2f - cardW - 20;
@@ -177,30 +174,23 @@ public void draw() {
 
     if (mouseX >= deckX && mouseX <= deckX + cardW &&
         mouseY >= deckY && mouseY <= deckY + cardH) {
-
-        System.out.println("Player draws a card");
         game.drawCard(game.playerOneHand);
-        game.nextTurn();
+        game.nextTurn(); 
         return;
     }
 
-    //  Check Hand 
-    for (Card c : game.playerOneHand) {
+    for (int i = game.playerOneHand.size() - 1; i >= 0; i--) {
+        Card c = game.playerOneHand.get(i);
         if (c.isMouseOver(mouseX, mouseY)) {
-
+            
             boolean played = game.playCard(c, game.playerOneHand);
 
             if (played) {
-                System.out.println("Player 1 performed one action");
-                hoveredCatCard = null;
-
-            
                 if (!c.value.equals("Attack") && !c.value.equals("Skip")) {
                     game.nextTurn();
                 }
                 return; 
-}
-            return; 
+            }
         }
     }
 }

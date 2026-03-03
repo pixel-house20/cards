@@ -116,23 +116,36 @@ public class ExplodingKittens extends CardGame {
         }
     }
 
-    public void resolvePendingAction() {
-        if (!actionPending || pendingActionCard == null) return;
+public void resolvePendingAction() {
+    if (!actionPending || pendingActionCard == null) return;
 
-        nopeWindowOpen = false;
-        if (actionCanceled) {
-            logEvent("Action was Noped!");
-        } else {
-            switch (pendingActionCard.value) {
-                case "Skip" -> { skipCount = 1; logEvent("Player " + pendingPlayer + " skipped."); }
-                case "Shuffle" -> { Collections.shuffle(deck); logEvent("Deck shuffled."); }
-                case "SeeFuture" -> {
-                    futurePreview.clear();
-                    for (int i = 0; i < Math.min(3, deck.size()); i++) futurePreview.add(deck.get(i));
-                    logEvent("Looking into the future...");
-                }
-                case "Attack" -> { turnsRemaining = 0; logEvent("ATTACK!"); }
-                case "Favor" -> {
+    nopeWindowOpen = false;
+    if (actionCanceled) {
+        logEvent("Action was Noped!");
+        // If it was noped, the player technically used their action. 
+        // We move to the next turn.
+        nextTurn();
+    } else {
+        switch (pendingActionCard.value) {
+            case "Skip" -> {
+                skipCount = 1;
+                logEvent("Player " + pendingPlayer + " used Skip.");
+                nextTurn(); 
+            }
+            case "Attack" -> {
+                logEvent("ATTACK! Player " + pendingPlayer + " ends turn.");
+                nextTurn(); 
+            }
+            case "Shuffle" -> { 
+                Collections.shuffle(deck); 
+                logEvent("Deck shuffled."); 
+            }
+            case "SeeFuture" -> {
+                futurePreview.clear();
+                for (int i = 0; i < Math.min(3, deck.size()); i++) futurePreview.add(deck.get(i));
+                logEvent("Future revealed (ooohhh!).");
+            }
+             case "Favor" -> {
                     int target = (pendingPlayer % 4) + 1;
                     List<Card> current = getHand(pendingPlayer);
                     List<Card> tHand = getHand(target);
@@ -141,13 +154,15 @@ public class ExplodingKittens extends CardGame {
                         logEvent("P" + pendingPlayer + " took a card from P" + target);
                     }
                 }
-            }
         }
-        actionPending = false;
-        pendingActionCard = null;
-        actionCanceled = false;
     }
+    actionPending = false;
+    pendingActionCard = null;
+    actionCanceled = false;
+}
 
+
+   
     public boolean playCard(Card card, List<Card> hand) {
         if (card.value.equals("Nope")) {
             if (nopeWindowOpen && pendingActionCard != null) {
@@ -178,21 +193,26 @@ public class ExplodingKittens extends CardGame {
     }
 
     public void nextTurn() {
-        if (turnsRemaining > 0) turnsRemaining--;
-        if (turnsRemaining <= 0) {
-            currentPlayer = (currentPlayer % 4) + 1;
-            if (pendingActionCard != null && pendingActionCard.value.equals("Attack")) {
-                turnsRemaining = 2;
-                pendingActionCard = null;
-            } else {
-                turnsRemaining = 1;
-            }
-            if (skipCount > 0) {
-                currentPlayer = (currentPlayer % 4) + 1;
-                skipCount = 0;
-            }
+        if (turnsRemaining > 1) {
+        turnsRemaining--;
+        logEvent("Player " + currentPlayer + " has " + turnsRemaining + " forced turns left.");
+        return;
+    }
+         currentPlayer = (currentPlayer % 4) + 1;
+
+        if (pendingActionCard != null && pendingActionCard.value.equals("Attack")) {
+            turnsRemaining = 2;
+        } else {
+            turnsRemaining = 1;
         }
-        logEvent("It is now Player " + currentPlayer + "'s turn.");
+
+        if (skipCount > 0) {
+            logEvent("Player " + currentPlayer + " was skipped!");
+            currentPlayer = (currentPlayer % 4) + 1;
+            skipCount = 0;
+        }
+
+        logEvent("Current Turn: Player " + currentPlayer);
     }
 
     private List<Card> getHand(int id) {
