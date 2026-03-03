@@ -19,6 +19,15 @@ public class App extends PApplet {
     int aiStartTime = 0;
     int aiDelay = 0; 
 
+    PImage startScreenImg;
+    final int Startstate = 0;
+    final int Gamestate = 1;
+    int currentState = Startstate;
+
+    java.util.ArrayList<String> gameLog = new java.util.ArrayList<>();
+    java.util.ArrayList<Integer> logTimers = new java.util.ArrayList<>();
+    final int FADE_TIME = 3000;
+
 
     public static void main(String[] args) {
         PApplet.main("App");
@@ -29,69 +38,80 @@ public class App extends PApplet {
         size(1000, 1000);   
     }
 
-    @Override
-    public void setup() {
+@Override
+public void setup() {
+    String path = "src/Graphics/";
 
-     stackImage = loadImage("Background.jpg");
-
-
-    cardImages.put("Skip", loadImage("Skip.jpg"));
-    cardImages.put("Explode", loadImage("Explode.jpg"));
-    cardImages.put("Defuse", loadImage("Defuse.jpg"));
-    cardImages.put("Shuffle", loadImage("Shuffle_.jpg"));
-    cardImages.put("SeeFuture", loadImage("SeeFuture_.jpg"));
-    cardImages.put("Nope", loadImage("Nope.jpg"));
-    cardImages.put("Favor", loadImage("Favor.jpg"));
-    cardImages.put("Attack", loadImage("Attack.jpg"));
+    stackImage = loadImage(path + "Background.jpg");
+    startScreenImg = loadImage(path + "Startscreen.jpg");
     
-    cardImages.put("Tacocat", loadImage("Tacocat_.jpg"));
-    cardImages.put("HairyPotato", loadImage("HairyPotato_.jpg"));
-    cardImages.put("Cattermelon", loadImage("Cattermelon_.jpg"));
-    cardImages.put("BeardCat", loadImage("BeardCat_.jpg"));
-    cardImages.put("RainbowCat", loadImage("RainbowCat_.jpg"));
+    cardImages.put("Skip",       loadImage(path + "Skip.jpg"));
+    cardImages.put("Explode",    loadImage(path + "Explode.jpg"));
+    cardImages.put("Defuse",     loadImage(path + "Defuse.jpg"));
+    cardImages.put("Shuffle",    loadImage(path + "Shuffle_.jpg"));
+    cardImages.put("SeeFuture",  loadImage(path + "SeeFuture_.jpg"));
+    cardImages.put("Nope",       loadImage(path + "Nope.jpg"));
+    cardImages.put("Favor",      loadImage(path + "Favor.jpg"));
+    cardImages.put("Attack",     loadImage(path + "Attack.jpg"));
+    
+    cardImages.put("Tacocat",     loadImage(path + "Tacocat_.jpg"));
+    cardImages.put("HairyPotato", loadImage(path + "HairyPotato_.jpg"));
+    cardImages.put("Cattermelon", loadImage(path + "Cattermelon_.jpg"));
+    cardImages.put("BeardCat",    loadImage(path + "Beardcat_.jpg")); 
+    cardImages.put("RainbowCat",  loadImage(path + "Rainbowcat_.jpg"));
 
-    game = new ExplodingKittens(cardImages); 
-    game.initializeGame();
-
-    // TEMP:  futurePreview for debugging CHANGE THIS LATER*****
-    for (int i = 0; i < Math.min(3, game.deck.size()); i++) {
-        game.futurePreview.add(game.deck.get(i));
+    for (String key : cardImages.keySet()) {
+        if (cardImages.get(key) == null) {
+            println("Still missing image for: " + key);
+        }
     }
-    
+
+    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);    game.initializeGame();
+    game.futurePreview.clear();
 }
 
 
-    @Override
-    public void draw() {
-    background(40,45,50);
+@Override
+public void draw() {
+    background(40, 45, 50);
 
-    displayGameInfo();
+    if (currentState == Startstate) {
+        if (startScreenImg != null) {
+            image(startScreenImg, 0, 0, width, height);
+        } else {
+            textAlign(CENTER, CENTER);
+            text("Click to Start", width/2, height/2);
+        }
+    } else {
+        displayGameInfo();
+        drawHand(game.playerOneHand, height - 200, "Your Hand", false);
+        drawStacks();
+        drawCenterDecks();
+        drawPlayPile();
 
-    drawHand(game.playerOneHand, height - 340, "Your Hand", false);
-    drawStacks();
-    drawCenterDecks();
-    drawPlayPile();
-
-   
-    if(game.currentPlayer != 1){
-
-        if(!aiWaiting){
-            aiWaiting = true;
-            aiStartTime = millis();
-
-
-            int time = 6000;
-            // 20000 for time
-            aiDelay = (int) random(5000, time);
-
+        if (!game.futurePreview.isEmpty()) {
+            drawFuturePreview();
         }
 
-        if(aiWaiting && millis() - aiStartTime >= aiDelay){
+        if (game.actionPending && frameCount % 120 == 0) {
+            game.resolvePendingAction();
+        }
 
-            takeAITurn(game.currentPlayer);
-            aiWaiting = false;
+        if (game.currentPlayer != 1 && !game.actionPending) {
+            if (!aiWaiting) {
+                aiWaiting = true;
+                aiStartTime = millis();
+                aiDelay = (int) random(1000, 3000);
+            }
+
+            if (aiWaiting && millis() - aiStartTime >= aiDelay) {
+                takeAITurn(game.currentPlayer);
+                aiWaiting = false;
+            }
         }
     }
+
+    drawGameLog();
 }
 
 
@@ -134,13 +154,19 @@ public class App extends PApplet {
     strokeWeight(1);
 }
     @Override
-public void mousePressed() {
+    public void mousePressed() {
+
+    if (currentState == Startstate) {
+        currentState = Gamestate;
+        return; 
+    }
 
     if(game.currentPlayer != 1) return;
 
-    if (!game.futurePreview.isEmpty()) {
+   if (!game.futurePreview.isEmpty()) {
         game.futurePreview.clear();
-        return;
+        futurePrinted = false; 
+        return; 
     }
 
     // Check Deck Click First (Draw = one action)
@@ -305,7 +331,7 @@ public void drawCenterDecks() {
 }
 
 public void drawPlayPile() {
-    float cardW = 100;
+    float cardW = 100; 
     float cardH = 150;
     float pileX = width / 2f + 20;  
     float pileY = height / 2f - cardH / 2f;
@@ -313,59 +339,81 @@ public void drawPlayPile() {
     for (int i = 0; i < game.playPile.size(); i++) {
         Card c = game.playPile.get(i);
 
-        float offset = i * 3;
+        float offset = i * 2; 
         c.setPosition(pileX + offset, pileY + offset, cardW, cardH);
         c.draw(this);
     }
 }
 
-
-public void takeAITurn(int player){
-
+public void takeAITurn(int player) {
     List<Card> hand = null;
 
-    switch(player){
+    switch(player) {
         case 2: hand = game.playerTwoHand; break;
         case 3: hand = game.playerThreeHand; break;
         case 4: hand = game.playerFourHand; break;
     }
 
-    if(hand == null || hand.isEmpty()) return;
+    if (hand == null || hand.isEmpty()) return;
 
     Card bestCard = null;
     int highestScore = -999;
 
-    for(Card c : hand){
+    for (Card c : hand) {
+        if (c.value.equals("Explode") || c.value.equals("Defuse")) continue;
 
-        if(c.type.equals("Action") || c.type.equals("Cat")){
+        int score = c.getStrategicValue();
 
-            int score = c.getStrategicValue();
-
-            if(c.type.equals("Cat")){
-                int count = 0;
-                for(Card other : hand){
-                    if(other.value.equals(c.value)) count++;
-                }
-                if(count < 2) continue;
+        // Cat card logic: AI only plays them if it has a pair
+        if (c.type.equals("Cat")) {
+            int count = 0;
+            for (Card other : hand) {
+                if (other.value.equals(c.value)) count++;
             }
+            if (count < 2) continue; 
+        }
 
-            if(score > highestScore){
-                highestScore = score;
-                bestCard = c;
-            }
+        if (score > highestScore) {
+            highestScore = score;
+            bestCard = c;
         }
     }
 
-    if(bestCard != null){
-        System.out.println("AI Player " + player + " plays: " + bestCard.value);
+    if (bestCard != null && highestScore > 2) {
         game.playCard(bestCard, hand);
     } else {
-        System.out.println("AI Player " + player + " draws");
         game.drawCard(hand);
     }
-
-    // EXACTLY ONE ACTION COMPLETE
-    game.nextTurn();
+    
 }
 
+public void drawGameLog() {
+    if (gameLog.isEmpty()) return;
+
+    int start = Math.max(0, gameLog.size() - 2);
+    textAlign(LEFT, TOP);
+    textSize(16);
+
+    for (int i = start; i < gameLog.size(); i++) {
+        int timeElapsed = millis() - logTimers.get(i);
+        
+        float starter = 255;
+        if (timeElapsed > FADE_TIME) {
+            starter = max(0, 255 - (timeElapsed - FADE_TIME) / 5.0f); 
+        }
+
+        if (starter > 0) {
+            int yPos = 80 + (i - start) * 25;
+            
+            fill(0, starter * 0.6f);
+            noStroke();
+            rect(20, yPos - 2, 400, 22, 5);
+
+            if (i == gameLog.size() - 1) fill(255, 255, 0, starter);
+            else fill(255, starter);
+            
+            text("> " + gameLog.get(i), 30, yPos);
+        }
+    }
+}
 }
