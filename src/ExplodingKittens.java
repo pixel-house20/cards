@@ -195,7 +195,36 @@ private void removeDefuse(List<Card> hand){
                 break;
 
             case "Favor":
-                //lowkey gotta do this 
+                System.out.println("Favor resolving");
+               int targetPlayer = pendingPlayer + 1;
+               if(targetPlayer>4) targetPlayer = 1;
+
+              List<Card> currentHand = switch (pendingPlayer) {
+                case 1 -> playerOneHand;
+                case 2 -> playerTwoHand;
+                case 3 -> playerThreeHand;
+                case 4 -> playerFourHand;
+                default -> null;         
+            };
+
+              List<Card> targetHand = switch (targetPlayer) {
+                case 1 -> playerOneHand;
+                case 2 -> playerTwoHand;
+                case 3 -> playerThreeHand;
+                case 4 -> playerFourHand;
+                default -> null;
+            };
+
+    if (targetHand != null && !targetHand.isEmpty()) {
+        Collections.shuffle(targetHand);
+        Card stolenCard = targetHand.remove(0);
+        currentHand.add(stolenCard);
+
+        System.out.println("Player " + pendingPlayer +
+                           " stole a card from Player " + targetPlayer);
+    } else {
+        System.out.println("Player " + targetPlayer + " has no cards to steal.");
+    }
                 break;
 
                 
