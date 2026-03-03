@@ -80,11 +80,18 @@ public void draw() {
             image(startScreenImg, 0, 0, width, height);
         } else {
             textAlign(CENTER, CENTER);
-            text("Click to Start", width/2, height/2);
+            textSize(32);
+            text("Exploding Kittens\nClick to Start", width/2, height/2);
         }
     } else {
+  
+        if (game.actionPending && frameCount % 120 == 0) {
+            game.resolvePendingAction();
+        }
+
         displayGameInfo();
-        drawHand(game.playerOneHand, height - 350, "Your Hand", false);        drawStacks();
+        drawHand(game.playerOneHand, height - 350, "Your Hand", false);
+        drawStacks();
         drawCenterDecks();
         drawPlayPile();
 
@@ -92,27 +99,24 @@ public void draw() {
             drawFuturePreview();
         }
 
-        if (game.actionPending && frameCount % 120 == 0) {
-            game.resolvePendingAction();
-        }
-
-        if (game.currentPlayer != 1 && !game.actionPending) {
+        if (game.currentPlayer != 1 && !game.actionPending && game.futurePreview.isEmpty()) {
             if (!aiWaiting) {
                 aiWaiting = true;
                 aiStartTime = millis();
-                aiDelay = (int) random(1000, 3000);
+
+
+                aiDelay = (int) random(1000, 2000); 
             }
 
             if (aiWaiting && millis() - aiStartTime >= aiDelay) {
                 takeAITurn(game.currentPlayer);
-                aiWaiting = false;
+                aiWaiting = false; 
             }
         }
     }
 
     drawGameLog();
 }
-
 
 
     public void drawStacks() {
@@ -351,10 +355,8 @@ public void takeAITurn(int player) {
 
     for (Card c : hand) {
         if (c.value.equals("Explode") || c.value.equals("Defuse")) continue;
-
         int score = c.getStrategicValue();
 
-        // Cat card logic: AI only plays them if it has a pair
         if (c.type.equals("Cat")) {
             int count = 0;
             for (Card other : hand) {
@@ -369,12 +371,21 @@ public void takeAITurn(int player) {
         }
     }
 
+    // AI DECISION LOGIC
     if (bestCard != null && highestScore > 2) {
-        game.playCard(bestCard, hand);
+        boolean played = game.playCard(bestCard, hand);
+        if (played) {
+            // FIX: If the card is NOT an Attack or Skip (which resolve themselves),
+            // we must end the AI's turn here.
+            if (!bestCard.value.equals("Attack") && !bestCard.value.equals("Skip")) {
+                game.nextTurn();
+            }
+        }
     } else {
+        // AI draws a card and ends turn
         game.drawCard(hand);
+        game.nextTurn();
     }
-    
 }
 
 public void drawGameLog() {

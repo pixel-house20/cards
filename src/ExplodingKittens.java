@@ -95,6 +95,9 @@ public class ExplodingKittens extends CardGame {
         deck.addAll(defuseCards);
         deck.addAll(explodingCards);
         Collections.shuffle(deck);
+
+        logEvent("Game Started!");
+        printAllHands();
     }
 
     public void drawCard(List<Card> hand) {
@@ -122,8 +125,6 @@ public void resolvePendingAction() {
     nopeWindowOpen = false;
     if (actionCanceled) {
         logEvent("Action was Noped!");
-        // If it was noped, the player technically used their action. 
-        // We move to the next turn.
         nextTurn();
     } else {
         switch (pendingActionCard.value) {
@@ -137,23 +138,28 @@ public void resolvePendingAction() {
                 nextTurn(); 
             }
             case "Shuffle" -> { 
-                Collections.shuffle(deck); 
-                logEvent("Deck shuffled."); 
-            }
+            Collections.shuffle(deck); 
+            logEvent("Deck shuffled.");
+            nextTurn(); 
+         }
             case "SeeFuture" -> {
                 futurePreview.clear();
-                for (int i = 0; i < Math.min(3, deck.size()); i++) futurePreview.add(deck.get(i));
-                logEvent("Future revealed (ooohhh!).");
-            }
-             case "Favor" -> {
-                    int target = (pendingPlayer % 4) + 1;
-                    List<Card> current = getHand(pendingPlayer);
-                    List<Card> tHand = getHand(target);
-                    if (tHand != null && !tHand.isEmpty()) {
-                        current.add(tHand.remove((int) (Math.random() * tHand.size())));
-                        logEvent("P" + pendingPlayer + " took a card from P" + target);
-                    }
+                for (int i = 0; i < Math.min(3, deck.size()); i++) {
+                    futurePreview.add(deck.get(i));
                 }
+                logEvent("Future revealed (ooohhh!).");
+                nextTurn();
+         }
+            case "Favor" -> {
+                int target = (pendingPlayer % 4) + 1;
+                List<Card> current = getHand(pendingPlayer);
+                List<Card> tHand = getHand(target);
+                if (tHand != null && !tHand.isEmpty()) {
+                    current.add(tHand.remove((int) (Math.random() * tHand.size())));
+                    logEvent("P" + pendingPlayer + " took a card from P" + target);
+                }
+                nextTurn(); 
+            }
         }
     }
     actionPending = false;
@@ -192,29 +198,45 @@ public void resolvePendingAction() {
         return true;
     }
 
-    public void nextTurn() {
-        if (turnsRemaining > 1) {
+   public void nextTurn() {
+    // 1. Capture the intent before clearing the card
+    boolean isAttack = (pendingActionCard != null && pendingActionCard.value.equals("Attack"));
+    boolean isSkip = (pendingActionCard != null && pendingActionCard.value.equals("Skip"));
+    boolean isEndingForcefully = isAttack || isSkip;
+
+    // 2. Clear the pending card immediately so it doesn't interfere with the next turn
+    pendingActionCard = null; 
+
+    // 3. Handle multiple turns (the 'remaining' logic)
+    if (turnsRemaining > 1 && !isEndingForcefully) {
         turnsRemaining--;
         logEvent("Player " + currentPlayer + " has " + turnsRemaining + " forced turns left.");
+        printAllHands(); 
         return;
     }
-         currentPlayer = (currentPlayer % 4) + 1;
 
-        if (pendingActionCard != null && pendingActionCard.value.equals("Attack")) {
-            turnsRemaining = 2;
-        } else {
-            turnsRemaining = 1;
-        }
+    // 4. Move to the next player
+    currentPlayer = (currentPlayer % 4) + 1;
 
-        if (skipCount > 0) {
-            logEvent("Player " + currentPlayer + " was skipped!");
-            currentPlayer = (currentPlayer % 4) + 1;
-            skipCount = 0;
-        }
-
-        logEvent("Current Turn: Player " + currentPlayer);
+    // 5. Apply the Attack/Skip logic to the NEW player
+    if (isAttack) {
+        // If attacked, the NEXT player gets 2 turns (or 2 + current)
+        turnsRemaining = 2; 
+        logEvent("Player " + currentPlayer + " ATTACKED! Take 2 turns.");
+    } else {
+        turnsRemaining = 1;
     }
 
+    if (isSkip || skipCount > 0) {
+        logEvent("Player " + currentPlayer + " was skipped!");
+        currentPlayer = (currentPlayer % 4) + 1;
+        skipCount = 0;
+        turnsRemaining = 1; 
+    }
+
+    printAllHands();
+    logEvent("Current Turn: Player " + currentPlayer);
+}
     private List<Card> getHand(int id) {
         return switch (id) {
             case 1 -> playerOneHand;
@@ -243,4 +265,22 @@ public void resolvePendingAction() {
             if (hand.get(i).value.equals("Defuse")) { hand.remove(i); return; }
         }
     }
+
+    public void printAllHands() {
+    System.out.println("\n--- Current Hands State ---");
+    printHand("Player 1 (Human)", playerOneHand);
+    printHand("Player 2 (AI)", playerTwoHand);
+    printHand("Player 3 (AI)", playerThreeHand);
+    printHand("Player 4 (AI)", playerFourHand);
+    System.out.println("Deck Size: " + deck.size());
+    System.out.println("---------------------------\n");
+}
+
+private void printHand(String label, List<Card> hand) {
+    System.out.print(label + ": [ ");
+    for (Card c : hand) {
+        System.out.print(c.value + " ");
+    }
+    System.out.println("]");
+}
 }
