@@ -18,10 +18,7 @@ public class App extends PApplet {
     boolean aiWaiting = false;
     int aiStartTime = 0;
     int aiDelay = 0; 
-    boolean restartQueued = false;
-    int restartStartTime = 0;
-    final int restartDelayMs = 2500;
-
+    final int GameOverState = 2;
     PImage startScreenImg;
     final int Startstate = 0;
     final int Gamestate = 1;
@@ -73,47 +70,34 @@ public void setup() {
     game.futurePreview.clear();
 }
 
-private void restartGame() {
-    gameLog.clear();
-    logTimers.clear();
-    futurePrinted = false;
-    aiWaiting = false;
-    restartQueued = false;
-    restartStartTime = 0;
-    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);
-    game.initializeGame();
-    game.futurePreview.clear();
-    currentState = Gamestate;
-}
-
-private void handleGameOver() {
-    fill(0, 170);
-    rect(0, 0, width, height);
-    fill(255, 80, 80);
-    textAlign(CENTER, CENTER);
-    textSize(36);
-    String explodedText = game.getExplodedPlayer() == 1
-        ? "You Exploded!"
-        : "Player " + game.getExplodedPlayer() + " Exploded!";
-    text(explodedText, width / 2f, height / 2f - 25);
+public void drawGameOverScreen(){
+    background(20,0,0);
+    
     fill(255);
-    textSize(20);
-    text("Starting a new game...", width / 2f, height / 2f + 20);
+    textAlign(CENTER,CENTER);
+    textSize(50);
+    text("You exploded!", width/2, height /2 -100);
 
-    if (!restartQueued) {
-        restartQueued = true;
-        restartStartTime = millis();
-    }
+    //restart button
+    float btnW = 250;
+    float btnH = 80;
+    float btnX = width / 2 - btnW / 2;
+    float btnY = height / 2;
 
-    if (millis() - restartStartTime >= restartDelayMs) {
-        restartGame();
-    }
+    fill(200, 50, 50);
+    rect(btnX, btnY, btnW, btnH, 20);
+
+    fill(255);
+    textSize(28);
+    text("RESTART", width / 2, btnY + btnH / 2); 
 }
-
-
 @Override
 public void draw() {
     background(40, 45, 50);
+        
+    if(currentState == GameOverState){
+        drawGameOverScreen();
+    }
     if (currentState == Startstate) {
         if (startScreenImg != null) {
             image(startScreenImg, 0, 0, width, height);
@@ -122,22 +106,15 @@ public void draw() {
             textSize(32);
             text("Exploding Kittens\nClick to Start", width/2, height/2);
         }
+        
     } else {
-        if (game.isGameOver()) {
-            handleGameOver();
-            drawGameLog();
-            return;
-        }
   
-        if (game.actionPending && frameCount % 30 == 0) {
+        if (game.actionPending && frameCount % 120 == 0) {
             game.resolvePendingAction();
         }
-
-        // Safety valve: if the pending card was cleared unexpectedly, unblock turns.
-        if (game.actionPending && game.pendingActionCard == null) {
-            game.actionPending = false;
-        }
-
+        if(game.playerOneHand.isEmpty()){
+        currentState = GameOverState;
+    }
         displayGameInfo();
         drawHand(game.playerOneHand, height - 350, "Your Hand", false);
         drawStacks();
@@ -146,21 +123,15 @@ public void draw() {
 
         if (!game.futurePreview.isEmpty()) {
             drawFuturePreview();
-
-            // AI "See Future" should not block the game waiting for a human click.
-            if (game.currentPlayer != 1) {
-                game.futurePreview.clear();
-                futurePrinted = false;
-            }
         }
 
-        if (game.currentPlayer != 1 && !game.actionPending) {
+        if (game.currentPlayer != 1 && !game.actionPending && game.futurePreview.isEmpty()) {
             if (!aiWaiting) {
                 aiWaiting = true;
                 aiStartTime = millis();
 
 
-                aiDelay = (int) random(800, 1500);
+                aiDelay = (int) random(5000, 10000); 
             }
 
             if (aiWaiting && millis() - aiStartTime >= aiDelay) {
@@ -211,14 +182,36 @@ public void draw() {
 
     strokeWeight(1);
 }
+
+public void restartGame(){
+    gameLog.clear();
+    logTimers.clear();
+
+    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);
+    game.initializeGame();
+
+    currentState = Gamestate;
+}
    @Override
 public void mousePressed() {
+   if(currentState == GameOverState){
+      float btnW = 250;
+    float btnH = 80;
+    float btnX = width / 2 - btnW / 2;
+    float btnY = height / 2;
+
+    if (mouseX >= btnX && mouseX <= btnX + btnW &&
+        mouseY >= btnY && mouseY <= btnY + btnH) {
+
+        restartGame();
+    }
+    return;
+   }
+   
     if (currentState == Startstate) {
         currentState = Gamestate;
         return; 
     }
-
-    if (game.isGameOver()) return;
 
     if (!game.futurePreview.isEmpty()) {
         game.futurePreview.clear();
@@ -247,10 +240,10 @@ public void mousePressed() {
             boolean played = game.playCard(c, game.playerOneHand);
 
             if (played) {
-                if (c.type.equals("Cat")) {
+                if (!c.value.equals("Attack") && !c.value.equals("Skip")) {
                     game.nextTurn();
                 }
-                return;
+                return; 
             }
         }
     }
@@ -400,10 +393,7 @@ public void takeAITurn(int player) {
         case 4: hand = game.playerFourHand; break;
     }
 
-    if (hand == null || hand.isEmpty()) {
-        game.nextTurn();
-        return;
-    }
+    if (hand == null || hand.isEmpty()) return;
 
     Card bestCard = null;
     int highestScore = -999;
@@ -429,8 +419,12 @@ public void takeAITurn(int player) {
     // AI DECISION LOGIC
     if (bestCard != null && highestScore > 2) {
         boolean played = game.playCard(bestCard, hand);
-        if (played && bestCard.type.equals("Cat")) {
-            game.nextTurn();
+        if (played) {
+            // FIX: If the card is NOT an Attack or Skip (which resolve themselves),
+            // we must end the AI's turn here.
+            if (!bestCard.value.equals("Attack") && !bestCard.value.equals("Skip")) {
+                game.nextTurn();
+            }
         }
     } else {
         // AI draws a card and ends turn
