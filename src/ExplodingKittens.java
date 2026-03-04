@@ -154,9 +154,14 @@ public void resolvePendingAction() {
                 nextTurn(); 
             }
             case "Shuffle" -> { 
-            Collections.shuffle(deck); 
-            logEvent("Deck shuffled.");
-            nextTurn(); 
+            if (!deck.isEmpty()) {
+        Collections.shuffle(deck);
+        logEvent("Player " + pendingPlayer + " shuffled the deck!");
+    } else {
+        logEvent("Shuffle failed — deck is empty.");
+    }
+
+    nextTurn();
          }
             case "SeeFuture" -> {
                 futurePreview.clear();
