@@ -38,8 +38,8 @@ public class App extends PApplet {
         size(1000, 1000);   
     }
 
-@Override
-public void setup() {
+	@Override
+	public void setup() {
     String path = "src/Graphics/";
 
     stackImage = loadImage(path + "Background.jpg");
@@ -66,9 +66,12 @@ public void setup() {
         }
     }
 
-    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);    game.initializeGame();
-    game.futurePreview.clear();
-}
+	    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);    game.initializeGame();
+	    game.futurePreview.clear();
+        aiWaiting = false;
+        aiStartTime = 0;
+        aiDelay = 0;
+	}
 
 public void drawGameOverScreen(){
     background(20,0,0);
@@ -76,7 +79,15 @@ public void drawGameOverScreen(){
     fill(255);
     textAlign(CENTER,CENTER);
     textSize(50);
-    text("You exploded!", width/2, height /2 -100);
+    String gameOverText = "Game Over";
+    if (game != null && game.isGameOver()) {
+        if (game.getExplodedPlayer() == 1) {
+            gameOverText = "You exploded!";
+        } else {
+            gameOverText = "Player " + game.getExplodedPlayer() + " exploded! You survived.";
+        }
+    }
+    text(gameOverText, width/2, height /2 -100);
 
     //restart button
     float btnW = 250;
@@ -97,6 +108,8 @@ public void draw() {
         
     if(currentState == GameOverState){
         drawGameOverScreen();
+        drawGameLog();
+        return;
     }
     if (currentState == Startstate) {
         if (startScreenImg != null) {
@@ -106,26 +119,56 @@ public void draw() {
             textSize(32);
             text("Exploding Kittens\nClick to Start", width/2, height/2);
         }
-        
-    } else {
+        drawGameLog();
+        return;
+	    } else {
   
-        if (game.actionPending && frameCount % 120 == 0) {
-            game.resolvePendingAction();
+	        if (game.actionPending && frameCount % 120 == 0) {
+	            game.resolvePendingAction();
+	        }
+        if (game.isGameOver()) {
+            aiWaiting = false;
+            currentState = GameOverState;
+            drawGameOverScreen();
+            drawGameLog();
+            return;
         }
-        if(game.playerOneHand.isEmpty()){
-        currentState = GameOverState;
-    }
         displayGameInfo();
         drawHand(game.playerOneHand, height - 350, "Your Hand", false);
         drawStacks();
         drawCenterDecks();
         drawPlayPile();
 
-        if (!game.futurePreview.isEmpty()) {
-            drawFuturePreview();
+	        if (!game.futurePreview.isEmpty()) {
+	            drawFuturePreview();
+	        }
+
+            // Safety: if an AI turn starts with an empty hand, don't stall in a wait loop.
+            if (game.currentPlayer != 1) {
+                List<Card> currentAIHand = null;
+                switch (game.currentPlayer) {
+                    case 2 -> currentAIHand = game.playerTwoHand;
+                    case 3 -> currentAIHand = game.playerThreeHand;
+                    case 4 -> currentAIHand = game.playerFourHand;
+                }
+                if (currentAIHand == null || currentAIHand.isEmpty()) {
+                    aiWaiting = false;
+                    game.nextTurn();
+                    drawGameLog();
+                    return;
+                }
+            }
+
+	        boolean aiCanAct = (game.currentPlayer != 1 && !game.actionPending && game.futurePreview.isEmpty());
+        if (!aiCanAct) {
+            aiWaiting = false;
         }
 
-        if (game.currentPlayer != 1 && !game.actionPending && game.futurePreview.isEmpty()) {
+        if (aiWaiting) {
+            drawAIThinking();
+        }
+
+        if (aiCanAct) {
             if (!aiWaiting) {
                 aiWaiting = true;
                 aiStartTime = millis();
@@ -187,10 +230,13 @@ public void restartGame(){
     gameLog.clear();
     logTimers.clear();
 
-    game = new ExplodingKittens(cardImages, gameLog, logTimers, this);
-    game.initializeGame();
+	game = new ExplodingKittens(cardImages, gameLog, logTimers, this);
+	game.initializeGame();
+    aiWaiting = false;
+    aiStartTime = 0;
+    aiDelay = 0;
 
-    currentState = Gamestate;
+	currentState = Gamestate;
 }
    @Override
 public void mousePressed() {
@@ -240,7 +286,7 @@ public void mousePressed() {
             boolean played = game.playCard(c, game.playerOneHand);
 
             if (played) {
-                if (!c.value.equals("Attack") && !c.value.equals("Skip")) {
+                if (!game.actionPending) {
                     game.nextTurn();
                 }
                 return; 
@@ -400,6 +446,8 @@ public void takeAITurn(int player) {
 
     for (Card c : hand) {
         if (c.value.equals("Explode") || c.value.equals("Defuse")) continue;
+        // "Nope" is only playable while an action is being resolved.
+        if (c.value.equals("Nope") && !(game.nopeWindowOpen && game.pendingActionCard != null)) continue;
         int score = c.getStrategicValue();
 
         if (c.type.equals("Cat")) {
@@ -419,12 +467,12 @@ public void takeAITurn(int player) {
     // AI DECISION LOGIC
     if (bestCard != null && highestScore > 2) {
         boolean played = game.playCard(bestCard, hand);
-        if (played) {
-            // FIX: If the card is NOT an Attack or Skip (which resolve themselves),
-            // we must end the AI's turn here.
-            if (!bestCard.value.equals("Attack") && !bestCard.value.equals("Skip")) {
-                game.nextTurn();
-            }
+        if (played && !game.actionPending) {
+            game.nextTurn();
+        } else if (!played) {
+            // Safety fallback: never let AI stall its turn on an unplayable card.
+            game.drawCard(hand);
+            game.nextTurn();
         }
     } else {
         // AI draws a card and ends turn
@@ -461,5 +509,29 @@ public void drawGameLog() {
             text("> " + gameLog.get(i), 30, yPos);
         }
     }
+}
+
+public void drawAIThinking() {
+    pushStyle();
+    
+    float x = width / 2;
+    float y = 150;
+    
+    String dots = "";
+    int dotCount = (frameCount / 30) % 4;
+    for(int i = 0; i < dotCount; i++) dots += ".";
+    
+    rectMode(CENTER);
+    noStroke();
+    fill(0, 150);
+    rect(x, y - 10, 250, 40, 10);
+    
+    // Draw the text
+    textAlign(CENTER, CENTER);
+    textSize(20);
+    fill(255, 255, 0);
+    text("AI Player " + game.currentPlayer + " is thinking" + dots, x, y - 10);
+    
+    popStyle();
 }
 }

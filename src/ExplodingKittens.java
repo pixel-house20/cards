@@ -135,7 +135,13 @@ public class ExplodingKittens extends CardGame {
     }
 
 public void resolvePendingAction() {
-    if (!actionPending || pendingActionCard == null) return;
+    if (!actionPending) return;
+    if (pendingActionCard == null) {
+        actionPending = false;
+        nopeWindowOpen = false;
+        actionCanceled = false;
+        return;
+    }
 
     nopeWindowOpen = false;
     if (actionCanceled) {
@@ -295,13 +301,12 @@ public void resolvePendingAction() {
     }
 
     public void printAllHands() {
-    System.out.println("\n--- Current Hands State ---");
-    printHand("Player 1 (Human)", playerOneHand);
+    System.out.println("Current Hands");
+    printHand("Player 1 (Player)", playerOneHand);
     printHand("Player 2 (AI)", playerTwoHand);
     printHand("Player 3 (AI)", playerThreeHand);
     printHand("Player 4 (AI)", playerFourHand);
     System.out.println("Deck Size: " + deck.size());
-    System.out.println("---------------------------\n");
 }
 
 private void printHand(String label, List<Card> hand) {

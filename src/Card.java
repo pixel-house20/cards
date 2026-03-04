@@ -4,16 +4,27 @@ import processing.core.PImage;
 public class Card extends ClickableRectangle {
     public String value;   // e.g., "Skip", "Tacocat"
     public String type;    // "Action", "Cat", "Exploding", "Defuse"
+    public String suit;    // legacy support for CardGame debug output
     public PImage image;
     public boolean hovered = false;
     private boolean selected = false;
+    private boolean turned = false;
     private int baseY;
     private boolean hasBaseY = false;
 
     public Card(String value, String type, PImage image){
         this.value = value;
         this.type = type;
+        this.suit = type;
         this.image = image;
+    }
+
+    // Legacy constructor used by CardGame's generic deck implementation.
+    public Card(String value, String suit) {
+        this.value = value;
+        this.suit = suit;
+        this.type = suit;
+        this.image = null;
     }
 
     // Make setSelected public so App can call it
@@ -30,6 +41,10 @@ public class Card extends ClickableRectangle {
 
     public boolean isSelected() {
         return selected;
+    }
+
+    public void setTurned(boolean turned) {
+        this.turned = turned;
     }
 
     public boolean isMouseOver(float mx, float my) {
@@ -49,6 +64,15 @@ public class Card extends ClickableRectangle {
             drawHeight *= 1.4;
             drawX -= (drawWidth - width) / 2;
             drawY -= (drawHeight - height) / 2;
+        }
+
+        if (turned) {
+            sketch.fill(70, 70, 90);
+            sketch.rect(drawX, drawY, drawWidth, drawHeight);
+            sketch.fill(255);
+            sketch.textAlign(PApplet.CENTER, PApplet.CENTER);
+            sketch.text("CARD", drawX + drawWidth / 2, drawY + drawHeight / 2);
+            return;
         }
 
         sketch.stroke(0);
